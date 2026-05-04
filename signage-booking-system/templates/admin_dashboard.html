@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container nav">
+            <div>
+                <p class="eyebrow">Staff area</p>
+                <h1>Admin dashboard</h1>
+            </div>
+            <nav>
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('admin_bookings') }}">Bookings</a>
+                <a href="{{ url_for('booking') }}">Public booking page</a>
+                <form action="{{ url_for('logout') }}" method="post" class="inline-form">
+                    <button type="submit" class="button secondary">Logout {{ admin_display_name }}</button>
+                </form>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="flash-stack">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        <section class="stats-grid">
+            <article class="stat-card">
+                <span>Total inventory</span>
+                <strong>{{ total_inventory }}</strong>
+            </article>
+            <article class="stat-card">
+                <span>Current available stock</span>
+                <strong>{{ available_stock }}</strong>
+            </article>
+            <article class="stat-card">
+                <span>Currently booked stock</span>
+                <strong>{{ booked_stock }}</strong>
+            </article>
+            <article class="stat-card">
+                <span>Predicted future stock</span>
+                <strong>{{ future_stock.projected_available }}</strong>
+                <small>Lowest projected availability on {{ future_stock.peak_date.strftime("%d %b %Y") }}</small>
+            </article>
+        </section>
+
+        <section class="layout-grid">
+            <div class="card">
+                <div class="section-header">
+                    <h2>Inventory management</h2>
+                    <p>Edit stock quantities and descriptions</p>
+                </div>
+                <div class="stack-list">
+                    {% for item in sign_cards %}
+                        <form action="{{ url_for('update_inventory', sign_id=item.sign.id) }}" method="post" class="inventory-form">
+                            <div>
+                                <p class="eyebrow">{{ item.sign.category or "General" }}</p>
+                                <h3>{{ item.sign.name }}</h3>
+                                <p>{{ item.sign.description }}</p>
+                                <div class="pill-row">
+                                    <span>Available now: {{ item.available_today }}</span>
+                                    <span>Booked now: {{ item.booked_today }}</span>
+                                    <span>Predicted future stock: {{ item.predicted_future_stock }}</span>
+                                </div>
+                            </div>
+                            <label>Total quantity
+                                <input type="number" name="total_quantity" min="0" value="{{ item.sign.total_quantity }}" required>
+                            </label>
+                            <label>Description
+                                <input type="text" name="description" value="{{ item.sign.description or '' }}">
+                            </label>
+                            <button type="submit" class="button secondary">Save inventory</button>
+                        </form>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-header">
+                    <h2>Upcoming bookings</h2>
+                    <p>Quick view of current requests and future allocations</p>
+                </div>
+                <div class="stack-list">
+                    {% for booking in upcoming_bookings %}
+                        <article class="mini-card">
+                            <div class="split-line">
+                                <h3>{{ booking.event_name }}</h3>
+                                <span class="status {{ booking.status|lower }}">{{ booking.status }}</span>
+                            </div>
+                            <p>{{ booking.contact_name }} | {{ booking.email }}</p>
+                            <p>{{ booking.pickup_date.strftime("%d %b %Y") }} to {{ booking.return_date.strftime("%d %b %Y") }}</p>
+                        </article>
+                    {% else %}
+                        <p>No upcoming bookings.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

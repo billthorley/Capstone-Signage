@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container nav">
+            <div>
+                <p class="eyebrow">Inventory overview</p>
+                <h1>Current signage stock</h1>
+            </div>
+            <nav>
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('booking') }}">Booking</a>
+                <a href="{{ url_for('login') if not is_admin_logged_in else url_for('admin_dashboard') }}">
+                    {{ "Admin Dashboard" if is_admin_logged_in else "Admin Login" }}
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <div class="section-header">
+                <h2>Inventory table</h2>
+                <p>Available stock is based on approved overlapping bookings only</p>
+            </div>
+
+            <div class="stack-list">
+                {% for category, rows in inventory_rows_by_category.items() %}
+                    <section class="category-block">
+                        <div class="category-heading">
+                            <h3>{{ category }}</h3>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Signage type</th>
+                                        <th>Total stock</th>
+                                        <th>Available today</th>
+                                        <th>Booked today</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in rows %}
+                                        <tr>
+                                            <td>{{ row.sign.name }}</td>
+                                            <td>{{ row.sign.total_quantity }}</td>
+                                            <td>{{ row.available_today }}</td>
+                                            <td>{{ row.booked_today }}</td>
+                                            <td>{{ row.sign.description }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>

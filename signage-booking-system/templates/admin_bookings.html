@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Bookings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container nav">
+            <div>
+                <p class="eyebrow">Staff workflow</p>
+                <h1>Manage bookings</h1>
+            </div>
+            <nav>
+                <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('booking') }}">Public booking page</a>
+                <form action="{{ url_for('logout') }}" method="post" class="inline-form">
+                    <button type="submit" class="button secondary">Logout {{ admin_display_name }}</button>
+                </form>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="flash-stack">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        <section class="card">
+            <div class="section-header">
+                <h2>All booking requests</h2>
+                <p>Approve, reject, collect, or return signage allocations</p>
+            </div>
+
+            <div class="stack-list">
+                {% for booking in booking_records %}
+                    <article class="booking-card">
+                        <div class="split-line">
+                            <div>
+                                <h3>{{ booking.event_name }}</h3>
+                                <p>{{ booking.contact_name }} | {{ booking.email }} | {{ booking.phone_number }}</p>
+                            </div>
+                            <span class="status {{ booking.status|lower }}">{{ booking.status }}</span>
+                        </div>
+                        <p><strong>Dates:</strong> {{ booking.pickup_date.strftime("%d %b %Y") }} to {{ booking.return_date.strftime("%d %b %Y") }}</p>
+                        <p><strong>Items:</strong>
+                            {% for item in booking.items %}
+                                {{ item.sign.name }} x{{ item.quantity }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        <p><strong>Notes:</strong> {{ booking.notes or "None" }}</p>
+
+                        <form action="{{ url_for('update_booking_status', booking_id=booking.id) }}" method="post" class="button-row wrap">
+                            <button type="submit" name="action" value="approve" class="button primary">Approve</button>
+                            <button type="submit" name="action" value="reject" class="button danger">Reject</button>
+                            <button type="submit" name="action" value="collect" class="button secondary">Mark collected</button>
+                            <button type="submit" name="action" value="return" class="button secondary">Mark returned</button>
+                        </form>
+                    </article>
+                {% else %}
+                    <p>No bookings have been submitted yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>

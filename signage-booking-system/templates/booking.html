@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Calendar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container nav">
+            <div>
+                <p class="eyebrow">Client booking page</p>
+                <h1>Book signage online</h1>
+            </div>
+            <nav>
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('inventory') }}">Inventory</a>
+                <a href="{{ url_for('login') if not is_admin_logged_in else url_for('admin_dashboard') }}">
+                    {{ "Admin Dashboard" if is_admin_logged_in else "Admin Login" }}
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="flash-stack">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        <section class="card hero-side">
+            <p class="eyebrow">Client booking workflow</p>
+            <h2>Check confirmed signage usage before you submit a request.</h2>
+            <p>The calendar helps clients see approved allocations at a glance, while the request form sends new bookings into the admin approval queue.</p>
+        </section>
+
+        <section class="layout-grid">
+            <div class="card">
+                <div class="section-header">
+                    <h2>Approved booking calendar</h2>
+                    <p>Only approved and collected bookings appear here</p>
+                </div>
+                <div id="calendar"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-header">
+                    <h2>Booking request form</h2>
+                    <p>All submissions are saved as pending by default</p>
+                </div>
+
+                <form action="{{ url_for('create_booking_request') }}" method="post" class="stack-form">
+                    <label>Event name
+                        <input type="text" name="event_name" required>
+                    </label>
+                    <label>Contact name
+                        <input type="text" name="contact_name" required>
+                    </label>
+                    <label>Email
+                        <input type="email" name="email" required>
+                    </label>
+                    <label>Phone number
+                        <input type="text" name="phone_number" required>
+                    </label>
+                    <div class="two-col">
+                        <label>Pickup date
+                            <input type="date" name="pickup_date" min="{{ today.isoformat() }}" required>
+                        </label>
+                        <label>Return date
+                            <input type="date" name="return_date" min="{{ today.isoformat() }}" required>
+                        </label>
+                    </div>
+                    <label>Signage type
+                        <select name="sign_id" id="sign-select" required>
+                            <option value="">Select signage</option>
+                            {% for category, signs in signs_by_category.items() %}
+                                <optgroup label="{{ category }}">
+                                    {% for sign in signs %}
+                                        <option value="{{ sign.id }}" data-total="{{ sign.total_quantity }}">
+                                            {{ sign.name }} ({{ sign.total_quantity }} total)
+                                        </option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>Quantity
+                        <input type="number" name="quantity" id="quantity-input" min="1" required>
+                        <small id="quantity-help">Choose a signage type to set the quantity limit.</small>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" rows="4" placeholder="Location details, collection notes, special requirements"></textarea>
+                    </label>
+                    <button type="submit" class="button primary">Submit booking request</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="{{ url_for('static', filename='calendar.js') }}"></script>
+</body>
+</html>

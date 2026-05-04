@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="container confirmation-wrap">
+        <section class="card centered-card">
+            <p class="eyebrow">Request submitted</p>
+            <h1>Booking request received</h1>
+            <p>Your request has been saved as <strong>{{ booking.status }}</strong> and sent to the admin for review.</p>
+            <div class="summary-box">
+                <p><strong>Event:</strong> {{ booking.event_name }}</p>
+                <p><strong>Contact:</strong> {{ booking.contact_name }}</p>
+                <p><strong>Pickup:</strong> {{ booking.pickup_date.strftime("%d %b %Y") }}</p>
+                <p><strong>Return:</strong> {{ booking.return_date.strftime("%d %b %Y") }}</p>
+            </div>
+            <div class="button-row">
+                <a class="button primary" href="{{ url_for('booking') }}">Create another booking</a>
+                <a class="button secondary" href="{{ url_for('index') }}">Back to home</a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
