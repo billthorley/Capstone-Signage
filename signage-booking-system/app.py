@@ -95,7 +95,7 @@ def user_required(view_func):
     return wrapped_view
 
 
-def create_app():
+def create_app(config_overrides=None):
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "capstone-mvp-secret")
     app.config["ADMIN_EMAIL"] = os.environ.get("ADMIN_EMAIL", "wyt001@student.usc.edu.au")
@@ -105,6 +105,9 @@ def create_app():
     app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
     app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
     app.config["MAIL_SENDER"] = os.environ.get("MAIL_SENDER", app.config["ADMIN_EMAIL"])
+
+    if config_overrides:
+        app.config.update(config_overrides)
 
     init_app(app)
 

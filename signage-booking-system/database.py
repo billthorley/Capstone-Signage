@@ -13,8 +13,8 @@ def get_database_path() -> str:
 
 
 def init_app(app) -> None:
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{get_database_path()}"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config.setdefault("SQLALCHEMY_DATABASE_URI", f"sqlite:///{get_database_path()}")
+    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
     db.init_app(app)
 
 
