@@ -3,70 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunshine Coast Signage Booking System</title>
+    <title>Signage System Access</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <header class="site-header">
-        <div class="container nav">
-            <div>
-                <p class="eyebrow">University Capstone MVP</p>
-                <h1>Sunshine Coast Marketing Signage Inventory Booking System</h1>
-            </div>
-            <nav>
-                <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('booking') }}">Booking</a>
-                <a href="{{ url_for('inventory') }}">Inventory</a>
-                <a href="{{ url_for('login') if not is_admin_logged_in else url_for('admin_dashboard') }}">
-                    {{ "Admin Dashboard" if is_admin_logged_in else "Admin Login" }}
-                </a>
-            </nav>
-        </div>
-    </header>
+    <main class="container confirmation-wrap">
+        <section class="card centered-card access-card">
+            <p class="eyebrow">Sunshine Coast Signage</p>
+            <h1>Select your portal</h1>
+            <p>Sign in as a user to access the booking system, or sign in as an admin to manage current and future bookings.</p>
 
-    <main class="container">
-        <section class="hero">
-            <div class="card hero-main">
-                <p class="eyebrow">Public client portal</p>
-                <h2>Book community signage with a simple request workflow.</h2>
-                <p>This MVP helps clients request signage online while staff manage approvals, collections, returns, and stock availability in one place.</p>
-                <div class="pill-row">
-                    <span>Live inventory view</span>
-                    <span>Calendar-based bookings</span>
-                    <span>Admin approval workflow</span>
-                </div>
-                <div class="button-row">
-                    <a class="button primary" href="{{ url_for('booking') }}">Make a booking request</a>
-                    <a class="button secondary" href="{{ url_for('login') if not is_admin_logged_in else url_for('admin_dashboard') }}">
-                        {{ "Open admin dashboard" if is_admin_logged_in else "Admin sign in" }}
-                    </a>
-                </div>
-            </div>
-            <div class="card hero-side">
-                <h3>Confirmed bookings</h3>
-                <strong class="big-number">{{ approved_count }}</strong>
-                <p>approved bookings currently recorded in the system</p>
-            </div>
-        </section>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <section class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </section>
+                {% endif %}
+            {% endwith %}
 
-        <section class="card">
-            <div class="section-header">
-                <h3>Available signage types</h3>
-                <p>Initial seeded inventory for the MVP</p>
-            </div>
-            <div class="card-grid">
-                {% for sign in signs %}
-                    <article class="mini-card">
-                        <p class="eyebrow">{{ sign.category or "General" }}</p>
-                        <h4>{{ sign.name }}</h4>
-                        <p>{{ sign.description }}</p>
-                        <strong>{{ sign.total_quantity }} in stock</strong>
-                    </article>
-                {% endfor %}
-            </div>
+            <section class="access-grid">
+                <article class="mini-card access-panel">
+                    <p class="eyebrow">User access</p>
+                    <h2>Booking system</h2>
+                    <p>Users can view availability, browse inventory, and submit signage booking requests.</p>
+                    <a class="button primary" href="{{ url_for('user_login') }}">User login</a>
+                </article>
+
+                <article class="mini-card access-panel">
+                    <p class="eyebrow">Admin access</p>
+                    <h2>Booking dashboard</h2>
+                    <p>Admins can review requests, approve bookings, update inventory, and manage future allocations.</p>
+                    <a class="button secondary" href="{{ url_for('admin_login') }}">Admin login</a>
+                </article>
+            </section>
         </section>
     </main>
 </body>

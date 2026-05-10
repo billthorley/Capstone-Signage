@@ -2,7 +2,8 @@ import smtplib
 from email.message import EmailMessage
 
 
-def send_booking_confirmation(app, booking, booking_item) -> None:
+def send_booking_confirmation(app, booking) -> None:
+    item_lines = [f"- {item.sign.name}: {item.quantity}" for item in booking.items]
     subject = f"New signage booking request: {booking.event_name}"
     body = "\n".join(
         [
@@ -14,8 +15,8 @@ def send_booking_confirmation(app, booking, booking_item) -> None:
             f"Phone number: {booking.phone_number}",
             f"Pickup date: {booking.pickup_date.strftime('%d %b %Y')}",
             f"Return date: {booking.return_date.strftime('%d %b %Y')}",
-            f"Signage type: {booking_item.sign.name}",
-            f"Quantity: {booking_item.quantity}",
+            "Requested items:",
+            *item_lines,
             f"Notes: {booking.notes or 'None'}",
             f"Status: {booking.status}",
         ]

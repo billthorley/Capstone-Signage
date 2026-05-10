@@ -17,11 +17,14 @@
                 <h1>Current signage stock</h1>
             </div>
             <nav>
-                <a href="{{ url_for('index') }}">Home</a>
                 <a href="{{ url_for('booking') }}">Booking</a>
-                <a href="{{ url_for('login') if not is_admin_logged_in else url_for('admin_dashboard') }}">
-                    {{ "Admin Dashboard" if is_admin_logged_in else "Admin Login" }}
-                </a>
+                <a href="{{ url_for('inventory') }}">Inventory</a>
+                {% if is_admin_logged_in %}
+                    <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                {% endif %}
+                <form action="{{ url_for('logout') }}" method="post" class="inline-form">
+                    <button type="submit" class="button secondary">Logout {{ admin_display_name or client_display_name }}</button>
+                </form>
             </nav>
         </div>
     </header>

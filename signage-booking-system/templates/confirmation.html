@@ -10,7 +10,22 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <main class="container confirmation-wrap">
+    <header class="site-header">
+        <div class="container nav">
+            <div>
+                <p class="eyebrow">Booking system</p>
+                <h1>Booking confirmation</h1>
+            </div>
+            <nav>
+                <a href="{{ url_for('booking') }}">Booking</a>
+                <a href="{{ url_for('inventory') }}">Inventory</a>
+                <form action="{{ url_for('logout') }}" method="post" class="inline-form">
+                    <button type="submit" class="button secondary">Logout {{ admin_display_name or client_display_name }}</button>
+                </form>
+            </nav>
+        </div>
+    </header>
+    <main class="container confirmation-wrap compact-top">
         <section class="card centered-card">
             <p class="eyebrow">Request submitted</p>
             <h1>Booking request received</h1>
@@ -20,10 +35,16 @@
                 <p><strong>Contact:</strong> {{ booking.contact_name }}</p>
                 <p><strong>Pickup:</strong> {{ booking.pickup_date.strftime("%d %b %Y") }}</p>
                 <p><strong>Return:</strong> {{ booking.return_date.strftime("%d %b %Y") }}</p>
+                <p><strong>Requested items:</strong></p>
+                <ul class="summary-list">
+                    {% for item in booking.items %}
+                        <li>{{ item.sign.name }} x{{ item.quantity }}</li>
+                    {% endfor %}
+                </ul>
             </div>
             <div class="button-row">
                 <a class="button primary" href="{{ url_for('booking') }}">Create another booking</a>
-                <a class="button secondary" href="{{ url_for('index') }}">Back to home</a>
+                <a class="button secondary" href="{{ url_for('inventory') }}">View inventory</a>
             </div>
         </section>
     </main>

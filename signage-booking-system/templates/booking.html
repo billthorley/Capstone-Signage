@@ -18,11 +18,14 @@
                 <h1>Book signage online</h1>
             </div>
             <nav>
-                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('booking') }}">Booking</a>
                 <a href="{{ url_for('inventory') }}">Inventory</a>
-                <a href="{{ url_for('login') if not is_admin_logged_in else url_for('admin_dashboard') }}">
-                    {{ "Admin Dashboard" if is_admin_logged_in else "Admin Login" }}
-                </a>
+                {% if is_admin_logged_in %}
+                    <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                {% endif %}
+                <form action="{{ url_for('logout') }}" method="post" class="inline-form">
+                    <button type="submit" class="button secondary">Logout {{ admin_display_name or client_display_name }}</button>
+                </form>
             </nav>
         </div>
     </header>
@@ -80,24 +83,33 @@
                             <input type="date" name="return_date" min="{{ today.isoformat() }}" required>
                         </label>
                     </div>
-                    <label>Signage type
-                        <select name="sign_id" id="sign-select" required>
-                            <option value="">Select signage</option>
-                            {% for category, signs in signs_by_category.items() %}
-                                <optgroup label="{{ category }}">
-                                    {% for sign in signs %}
-                                        <option value="{{ sign.id }}" data-total="{{ sign.total_quantity }}">
-                                            {{ sign.name }} ({{ sign.total_quantity }} total)
-                                        </option>
+                    <div class="section-heading-inline">
+                        <label class="label-heading">Requested signage items</label>
+                        <button type="button" class="button secondary small-button" id="add-item-button">Add another item</button>
+                    </div>
+                    <div id="booking-items-list" class="stack-list booking-items-list">
+                        <div class="booking-item-row">
+                            <label>Signage type
+                                <select name="sign_id[]" class="sign-select" required>
+                                    <option value="">Select signage</option>
+                                    {% for category, signs in signs_by_category.items() %}
+                                        <optgroup label="{{ category }}">
+                                            {% for sign in signs %}
+                                                <option value="{{ sign.id }}" data-total="{{ sign.total_quantity }}">
+                                                    {{ sign.name }} ({{ sign.total_quantity }} total)
+                                                </option>
+                                            {% endfor %}
+                                        </optgroup>
                                     {% endfor %}
-                                </optgroup>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>Quantity
-                        <input type="number" name="quantity" id="quantity-input" min="1" required>
-                        <small id="quantity-help">Choose a signage type to set the quantity limit.</small>
-                    </label>
+                                </select>
+                            </label>
+                            <label>Quantity
+                                <input type="number" name="quantity[]" class="quantity-input" min="1" required>
+                                <small class="quantity-help">Choose a signage type to set the quantity limit.</small>
+                            </label>
+                            <button type="button" class="button danger item-remove-button" disabled>Remove</button>
+                        </div>
+                    </div>
                     <label>Notes
                         <textarea name="notes" rows="4" placeholder="Location details, collection notes, special requirements"></textarea>
                     </label>

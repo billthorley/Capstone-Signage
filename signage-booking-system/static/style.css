@@ -115,7 +115,8 @@ main.container {
 .layout-grid,
 .stats-grid,
 .card-grid,
-.two-col {
+.two-col,
+.dashboard-hero-grid {
     display: grid;
     gap: 1.25rem;
 }
@@ -137,6 +138,11 @@ main.container {
 
 .two-col {
     grid-template-columns: 1fr 1fr;
+}
+
+.dashboard-hero-grid {
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 1.5rem;
 }
 
 .card,
@@ -238,6 +244,17 @@ small,
     margin-top: 1rem;
 }
 
+.section-heading-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.label-heading {
+    font-weight: 700;
+}
+
 .button {
     display: inline-flex;
     justify-content: center;
@@ -271,6 +288,11 @@ small,
     color: var(--danger);
 }
 
+.small-button {
+    padding: 0.62rem 0.9rem;
+    font-size: 0.92rem;
+}
+
 .big-number {
     display: block;
     font-size: 3.3rem;
@@ -284,6 +306,43 @@ small,
 .inventory-form {
     display: grid;
     gap: 1rem;
+}
+
+.booking-items-list {
+    gap: 0.9rem;
+}
+
+.booking-item-row {
+    display: grid;
+    grid-template-columns: 1.3fr 0.8fr auto;
+    gap: 0.9rem;
+    align-items: end;
+    padding: 1rem;
+    border: 1px solid rgba(147, 197, 253, 0.4);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.chart-card canvas {
+    width: 100% !important;
+    height: 320px !important;
+}
+
+.access-card {
+    width: min(860px, 100%);
+}
+
+.access-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+.access-panel {
+    display: grid;
+    gap: 0.8rem;
+    align-content: start;
 }
 
 .category-block {
@@ -439,6 +498,11 @@ th {
     place-items: center;
 }
 
+.compact-top {
+    min-height: auto;
+    padding-top: 2rem;
+}
+
 .centered-card {
     width: min(680px, 100%);
 }
@@ -449,6 +513,12 @@ th {
     border-radius: 18px;
     padding: 1rem 1.1rem;
     margin: 1rem 0;
+}
+
+.summary-list {
+    margin: 0.4rem 0 0;
+    padding-left: 1.2rem;
+    color: var(--muted);
 }
 
 code {
@@ -490,13 +560,20 @@ code {
     .layout-grid,
     .stats-grid,
     .card-grid,
-    .two-col {
+    .two-col,
+    .access-grid,
+    .dashboard-hero-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .booking-item-row {
         grid-template-columns: 1fr;
     }
 
     .nav,
     .section-header,
-    .split-line {
+    .split-line,
+    .section-heading-inline {
         flex-direction: column;
         align-items: flex-start;
     }

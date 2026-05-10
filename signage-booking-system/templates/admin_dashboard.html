@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header class="site-header">
@@ -58,58 +59,148 @@
             </article>
         </section>
 
-        <section class="layout-grid">
-            <div class="card">
+        <section class="dashboard-hero-grid">
+            <div class="card chart-card">
                 <div class="section-header">
-                    <h2>Inventory management</h2>
-                    <p>Edit stock quantities and descriptions</p>
+                    <h2>Stock overview</h2>
+                    <p>Current available versus booked stock</p>
                 </div>
-                <div class="stack-list">
-                    {% for item in sign_cards %}
-                        <form action="{{ url_for('update_inventory', sign_id=item.sign.id) }}" method="post" class="inventory-form">
-                            <div>
-                                <p class="eyebrow">{{ item.sign.category or "General" }}</p>
-                                <h3>{{ item.sign.name }}</h3>
-                                <p>{{ item.sign.description }}</p>
-                                <div class="pill-row">
-                                    <span>Available now: {{ item.available_today }}</span>
-                                    <span>Booked now: {{ item.booked_today }}</span>
-                                    <span>Predicted future stock: {{ item.predicted_future_stock }}</span>
-                                </div>
-                            </div>
-                            <label>Total quantity
-                                <input type="number" name="total_quantity" min="0" value="{{ item.sign.total_quantity }}" required>
-                            </label>
-                            <label>Description
-                                <input type="text" name="description" value="{{ item.sign.description or '' }}">
-                            </label>
-                            <button type="submit" class="button secondary">Save inventory</button>
-                        </form>
-                    {% endfor %}
-                </div>
+                <canvas id="overviewChart"></canvas>
             </div>
 
-            <div class="card">
+            <div class="card chart-card">
                 <div class="section-header">
-                    <h2>Upcoming bookings</h2>
-                    <p>Quick view of current requests and future allocations</p>
+                    <h2>Future availability trend</h2>
+                    <p>Projected available stock over the coming weeks</p>
                 </div>
-                <div class="stack-list">
-                    {% for booking in upcoming_bookings %}
-                        <article class="mini-card">
-                            <div class="split-line">
-                                <h3>{{ booking.event_name }}</h3>
-                                <span class="status {{ booking.status|lower }}">{{ booking.status }}</span>
-                            </div>
-                            <p>{{ booking.contact_name }} | {{ booking.email }}</p>
-                            <p>{{ booking.pickup_date.strftime("%d %b %Y") }} to {{ booking.return_date.strftime("%d %b %Y") }}</p>
-                        </article>
-                    {% else %}
-                        <p>No upcoming bookings.</p>
-                    {% endfor %}
+                <canvas id="trendChart"></canvas>
+            </div>
+        </section>
+
+        <section class="dashboard-hero-grid">
+            <div class="card chart-card">
+                <div class="section-header">
+                    <h2>Inventory by category</h2>
+                    <p>Total stock across signage groups</p>
                 </div>
+                <canvas id="categoryChart"></canvas>
+            </div>
+
+            <div class="card chart-card">
+                <div class="section-header">
+                    <h2>Most allocated items</h2>
+                    <p>Booked versus available stock by item</p>
+                </div>
+                <canvas id="topItemsChart"></canvas>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="section-header">
+                <h2>Current stock table</h2>
+                <p>Quick inventory view for all signage items</p>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Item</th>
+                            <th>Total stock</th>
+                            <th>Available now</th>
+                            <th>Booked now</th>
+                            <th>Predicted future stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in sign_cards %}
+                            <tr>
+                                <td>{{ item.sign.category or "General" }}</td>
+                                <td>{{ item.sign.name }}</td>
+                                <td>{{ item.sign.total_quantity }}</td>
+                                <td>{{ item.available_today }}</td>
+                                <td>{{ item.booked_today }}</td>
+                                <td>{{ item.predicted_future_stock }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </section>
     </main>
+
+    <script>
+        const overviewChart = new Chart(document.getElementById("overviewChart"), {
+            type: "doughnut",
+            data: {
+                labels: {{ chart_overview_labels|tojson }},
+                datasets: [{
+                    data: {{ chart_overview_values|tojson }},
+                    backgroundColor: ["#2563eb", "#93c5fd"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                plugins: { legend: { position: "bottom" } }
+            }
+        });
+
+        const trendChart = new Chart(document.getElementById("trendChart"), {
+            type: "line",
+            data: {
+                labels: {{ chart_trend_labels|tojson }},
+                datasets: [{
+                    label: "Available stock",
+                    data: {{ chart_trend_values|tojson }},
+                    fill: true,
+                    borderColor: "#2563eb",
+                    backgroundColor: "rgba(37, 99, 235, 0.14)",
+                    tension: 0.3
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        const categoryChart = new Chart(document.getElementById("categoryChart"), {
+            type: "pie",
+            data: {
+                labels: {{ chart_category_labels|tojson }},
+                datasets: [{
+                    data: {{ chart_category_totals|tojson }},
+                    backgroundColor: ["#2563eb", "#60a5fa", "#93c5fd", "#bfdbfe", "#1d4ed8"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                plugins: { legend: { position: "bottom" } }
+            }
+        });
+
+        const topItemsChart = new Chart(document.getElementById("topItemsChart"), {
+            type: "bar",
+            data: {
+                labels: {{ chart_top_item_labels|tojson }},
+                datasets: [
+                    {
+                        label: "Booked",
+                        data: {{ chart_top_item_booked|tojson }},
+                        backgroundColor: "#2563eb"
+                    },
+                    {
+                        label: "Available",
+                        data: {{ chart_top_item_available|tojson }},
+                        backgroundColor: "#93c5fd"
+                    }
+                ]
+            },
+            options: {
+                indexAxis: "y",
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+    </script>
 </body>
 </html>

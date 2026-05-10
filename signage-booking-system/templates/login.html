@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>{{ login_title }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -12,9 +12,9 @@
 <body>
     <main class="container confirmation-wrap">
         <section class="card centered-card">
-            <p class="eyebrow">Admin access</p>
-            <h1>Sign in to the staff dashboard</h1>
-            <p>This MVP uses two hardcoded demo accounts so the admin pages are restricted during presentations.</p>
+            <p class="eyebrow">{{ login_type }} access</p>
+            <h1>{{ login_heading }}</h1>
+            <p>{{ login_description }}</p>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -26,21 +26,22 @@
                 {% endif %}
             {% endwith %}
 
-            <form action="{{ url_for('login') }}" method="post" class="stack-form">
+            <form action="{{ url_for('admin_login') if login_type == 'admin' else url_for('user_login') }}" method="post" class="stack-form">
                 <input type="hidden" name="next" value="{{ next_url }}">
                 <label>Username
-                    <input type="text" name="username" placeholder="admin1" required>
+                    <input type="text" name="username" placeholder="{{ placeholder_username }}" required>
                 </label>
                 <label>Password
-                    <input type="password" name="password" placeholder="admin123" required>
+                    <input type="password" name="password" placeholder="{{ placeholder_password }}" required>
                 </label>
                 <button type="submit" class="button primary">Sign in</button>
             </form>
 
             <div class="summary-box">
                 <h3>Demo credentials</h3>
-                <p><strong>Admin 1:</strong> <code>admin1</code> / <code>admin123</code></p>
-                <p><strong>Admin 2:</strong> <code>admin2</code> / <code>admin456</code></p>
+                {% for username, details in demo_users.items() %}
+                    <p><strong>{{ details.label }}:</strong> <code>{{ username }}</code> / <code>{{ details.password }}</code></p>
+                {% endfor %}
             </div>
 
             <div class="button-row">
