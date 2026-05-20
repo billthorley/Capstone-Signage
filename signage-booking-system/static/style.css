@@ -323,6 +323,10 @@ small,
     background: rgba(255, 255, 255, 0.65);
 }
 
+.admin-booking-item-row {
+    grid-template-columns: 1.3fr 0.8fr;
+}
+
 .chart-card canvas {
     width: 100% !important;
     height: 320px !important;
@@ -567,6 +571,10 @@ code {
     }
 
     .booking-item-row {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-booking-item-row {
         grid-template-columns: 1fr;
     }
 

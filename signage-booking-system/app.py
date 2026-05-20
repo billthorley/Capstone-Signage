@@ -150,6 +150,23 @@ def group_signs_by_category(signs):
     return grouped
 
 
+def can_adjust_booking_stock(booking_record, booking_item_payload):
+    for sign_id, quantity in booking_item_payload:
+        sign = db.session.get(Sign, sign_id)
+        if sign is None:
+            return False, "One of the selected signage items no longer exists."
+        if quantity <= 0:
+            return False, f"Quantity for {sign.name} must be at least 1."
+        if quantity > sign.total_quantity:
+            return False, f"Quantity for {sign.name} cannot exceed {sign.total_quantity}."
+
+        available = get_available_stock(sign, booking_record.pickup_date, booking_record.return_date, booking_record.id)
+        if quantity > available:
+            return False, f"Only {available} {sign.name} signs are available for those dates."
+
+    return True, None
+
+
 def parse_booking_items(form):
     sign_ids = form.getlist("sign_id[]")
     quantities = form.getlist("quantity[]")
@@ -416,6 +433,82 @@ def register_routes(app):
         booking_records = Booking.query.order_by(Booking.created_at.desc()).all()
         return render_template("admin_bookings.html", booking_records=booking_records)
 
+    @app.route("/admin/bookings/manage")
+    @admin_required
+    def manage_booking_stock():
+        booking_records = Booking.query.order_by(Booking.created_at.desc()).all()
+        signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
+        return render_template(
+            "admin_booking_stock.html",
+            booking_records=booking_records,
+            signs_by_category=group_signs_by_category(signs),
+        )
+
+    @app.route("/admin/bookings/<int:booking_id>/edit", methods=["POST"])
+    @admin_required
+    def edit_booking_stock(booking_id: int):
+        booking_record = Booking.query.get_or_404(booking_id)
+
+        raw_sign_ids = request.form.getlist("sign_id[]")
+        raw_quantities = request.form.getlist("quantity[]")
+        updated_items = []
+
+        for sign_id, quantity in zip(raw_sign_ids, raw_quantities):
+            if not sign_id and not quantity:
+                continue
+            if not sign_id or not quantity:
+                flash("Each booking row must include both a signage type and quantity.", "error")
+                return redirect(url_for("manage_booking_stock"))
+
+            try:
+                updated_items.append((int(sign_id), int(quantity)))
+            except ValueError:
+                flash("Booking changes must use valid signage and quantity values.", "error")
+                return redirect(url_for("manage_booking_stock"))
+
+        if not updated_items:
+            flash("A booking must contain at least one signage item.", "error")
+            return redirect(url_for("manage_booking_stock"))
+
+        consolidated_items = {}
+        for sign_id, quantity in updated_items:
+            consolidated_items[sign_id] = consolidated_items.get(sign_id, 0) + quantity
+
+        payload = [(sign_id, quantity) for sign_id, quantity in consolidated_items.items()]
+
+        if booking_record.status in {"APPROVED", "COLLECTED"}:
+            is_valid, error_message = can_adjust_booking_stock(booking_record, payload)
+            if not is_valid:
+                flash(error_message, "error")
+                return redirect(url_for("manage_booking_stock"))
+        else:
+            for sign_id, quantity in payload:
+                sign = db.session.get(Sign, sign_id)
+                if sign is None:
+                    flash("One of the selected signage items no longer exists.", "error")
+                    return redirect(url_for("manage_booking_stock"))
+                if quantity <= 0 or quantity > sign.total_quantity:
+                    flash(f"Quantity for {sign.name} must be between 1 and {sign.total_quantity}.", "error")
+                    return redirect(url_for("manage_booking_stock"))
+
+        booking_record.items.clear()
+        for sign_id, quantity in payload:
+            sign = db.session.get(Sign, sign_id)
+            booking_record.items.append(BookingItem(sign=sign, quantity=quantity))
+
+        db.session.commit()
+        flash(f"Booking stock updated for {booking_record.event_name}.", "success")
+        return redirect(url_for("manage_booking_stock"))
+
+    @app.route("/admin/bookings/<int:booking_id>/cancel", methods=["POST"])
+    @admin_required
+    def cancel_booking(booking_id: int):
+        booking_record = Booking.query.get_or_404(booking_id)
+        booking_record.status = "CANCELLED"
+        db.session.commit()
+        flash(f"Booking cancelled for {booking_record.event_name}.", "success")
+        return redirect(url_for("manage_booking_stock"))
+
     @app.route("/admin/bookings/<int:booking_id>/status", methods=["POST"])
     @admin_required
     def update_booking_status(booking_id: int):
@@ -434,6 +527,7 @@ def register_routes(app):
             "COLLECTED": {"return"},
             "REJECTED": set(),
             "RETURNED": set(),
+            "CANCELLED": set(),
         }
 
         if action not in transitions:
