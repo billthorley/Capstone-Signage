@@ -13,6 +13,7 @@ def app(tmp_path: Path):
     flask_app = create_app(
         {
             "TESTING": True,
+            "SEED_DEMO_DATA": False,
             "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
             "WTF_CSRF_ENABLED": False,
         }

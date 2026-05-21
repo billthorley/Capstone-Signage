@@ -105,6 +105,7 @@ def create_app(config_overrides=None):
     app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
     app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
     app.config["MAIL_SENDER"] = os.environ.get("MAIL_SENDER", app.config["ADMIN_EMAIL"])
+    app.config.setdefault("SEED_DEMO_DATA", True)
 
     if config_overrides:
         app.config.update(config_overrides)
@@ -114,6 +115,11 @@ def create_app(config_overrides=None):
     with app.app_context():
         db.create_all()
         ensure_schema_updates()
+        from seed_data import seed_demo_bookings, seed_signs
+
+        seed_signs()
+        if app.config.get("SEED_DEMO_DATA"):
+            seed_demo_bookings()
 
     @app.context_processor
     def inject_auth_state():
