@@ -196,6 +196,25 @@ def parse_booking_items(form):
     return parsed_items
 
 
+def build_availability_payload(signs, pickup_date=None, return_date=None):
+    payload = []
+    start_date = pickup_date or date.today()
+    end_date = return_date or start_date
+
+    for sign in signs:
+        payload.append(
+            {
+                "id": sign.id,
+                "category": sign.category or "General",
+                "name": sign.name,
+                "total_quantity": sign.total_quantity,
+                "available_quantity": get_available_stock(sign, start_date, end_date),
+            }
+        )
+
+    return payload
+
+
 def register_routes(app):
     @app.route("/")
     def index():
@@ -271,7 +290,12 @@ def register_routes(app):
     @user_required
     def booking():
         signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
-        return render_template("booking.html", signs_by_category=group_signs_by_category(signs), today=date.today())
+        return render_template(
+            "booking.html",
+            signs_by_category=group_signs_by_category(signs),
+            inventory_reference=build_availability_payload(signs),
+            today=date.today(),
+        )
 
     @app.route("/logout", methods=["POST"])
     def logout():
@@ -327,8 +351,17 @@ def register_routes(app):
 
             booking_record.items.append(BookingItem(sign=item_data["sign"], quantity=item_data["quantity"]))
 
-        db.session.add(booking_record)
-        db.session.commit()
+        try:
+            db.session.add(booking_record)
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.exception("Booking save failed: %s", exc)
+            flash(
+                "The booking could not be saved right now. Please try again or contact the administrator.",
+                "error",
+            )
+            return redirect(url_for("booking"))
 
         try:
             send_booking_confirmation(app, booking_record)
@@ -372,6 +405,21 @@ def register_routes(app):
             .all()
         )
         return jsonify([build_calendar_event(booking_record) for booking_record in active_bookings])
+
+    @app.route("/api/availability")
+    @user_required
+    def availability_api():
+        signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
+        pickup_raw = request.args.get("pickup_date")
+        return_raw = request.args.get("return_date")
+
+        pickup_date = parse_date(pickup_raw) if pickup_raw else None
+        return_date = parse_date(return_raw) if return_raw else pickup_date
+
+        if pickup_date and return_date and return_date < pickup_date:
+            return jsonify({"error": "Return date must be on or after the pickup date."}), 400
+
+        return jsonify(build_availability_payload(signs, pickup_date, return_date))
 
     @app.route("/admin")
     @admin_required

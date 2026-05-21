@@ -16,6 +16,84 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const bookingItemsList = document.getElementById("booking-items-list");
     const addItemButton = document.getElementById("add-item-button");
+    const pickupDateInput = document.getElementById("pickup-date");
+    const returnDateInput = document.getElementById("return-date");
+    const availabilityTable = document.getElementById("availability-table");
+    let availabilityBySignId = {};
+
+    function updateAvailabilityTableRows(items) {
+        if (!availabilityTable) {
+            return;
+        }
+
+        items.forEach((item) => {
+            const row = availabilityTable.querySelector(`[data-sign-id="${item.id}"]`);
+            if (row) {
+                const availableCell = row.querySelector(".available-quantity");
+                if (availableCell) {
+                    availableCell.textContent = String(item.available_quantity);
+                }
+            }
+        });
+    }
+
+    function applyAvailabilityToRow(row) {
+        const signSelect = row.querySelector(".sign-select");
+        const quantityInput = row.querySelector(".quantity-input");
+        const quantityHelp = row.querySelector(".quantity-help");
+
+        if (!signSelect || !quantityInput || !quantityHelp) {
+            return;
+        }
+
+        const selectedOption = signSelect.options[signSelect.selectedIndex];
+        const signId = signSelect.value;
+        const fallbackTotal = Number(selectedOption?.dataset.total || 0);
+        const signAvailability = availabilityBySignId[signId];
+        const available = signAvailability ? Number(signAvailability.available_quantity) : fallbackTotal;
+
+        if (signId && available >= 0) {
+            quantityInput.max = String(available);
+            quantityInput.placeholder = `Maximum ${available}`;
+            quantityHelp.textContent = `Available for selected dates: ${available} of ${fallbackTotal}.`;
+        } else {
+            quantityInput.removeAttribute("max");
+            quantityInput.placeholder = "";
+            quantityHelp.textContent = "Choose a signage type to set the quantity limit.";
+        }
+    }
+
+    async function refreshAvailability() {
+        const params = new URLSearchParams();
+        if (pickupDateInput?.value) {
+            params.set("pickup_date", pickupDateInput.value);
+        }
+        if (returnDateInput?.value) {
+            params.set("return_date", returnDateInput.value);
+        }
+
+        const url = params.toString() ? `/api/availability?${params.toString()}` : "/api/availability";
+
+        try {
+            const response = await fetch(url, { headers: { Accept: "application/json" } });
+            if (!response.ok) {
+                return;
+            }
+
+            const items = await response.json();
+            availabilityBySignId = {};
+            items.forEach((item) => {
+                availabilityBySignId[String(item.id)] = item;
+            });
+
+            updateAvailabilityTableRows(items);
+            if (bookingItemsList) {
+                bookingItemsList.querySelectorAll(".booking-item-row").forEach(applyAvailabilityToRow);
+            }
+        } catch (error) {
+            console.warn("Availability refresh failed", error);
+        }
+    }
 
     function bindBookingItemRow(row) {
         const signSelect = row.querySelector(".sign-select");
@@ -25,18 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (signSelect && quantityInput && quantityHelp) {
             signSelect.addEventListener("change", () => {
-                const selectedOption = signSelect.options[signSelect.selectedIndex];
-                const total = Number(selectedOption?.dataset.total || 0);
-
-                if (total > 0) {
-                    quantityInput.max = String(total);
-                    quantityInput.placeholder = `Maximum ${total}`;
-                    quantityHelp.textContent = `This signage type has ${total} total items in inventory.`;
-                } else {
-                    quantityInput.removeAttribute("max");
-                    quantityInput.placeholder = "";
-                    quantityHelp.textContent = "Choose a signage type to set the quantity limit.";
-                }
+                applyAvailabilityToRow(row);
             });
         }
 
@@ -67,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bookingItemsList) {
         bookingItemsList.querySelectorAll(".booking-item-row").forEach(bindBookingItemRow);
         updateRemoveButtons();
+        bookingItemsList.querySelectorAll(".booking-item-row").forEach(applyAvailabilityToRow);
     }
 
     if (addItemButton && bookingItemsList) {
@@ -96,6 +164,17 @@ document.addEventListener("DOMContentLoaded", () => {
             bookingItemsList.appendChild(newRow);
             bindBookingItemRow(newRow);
             updateRemoveButtons();
+            applyAvailabilityToRow(newRow);
         });
     }
+
+    if (pickupDateInput) {
+        pickupDateInput.addEventListener("change", refreshAvailability);
+    }
+
+    if (returnDateInput) {
+        returnDateInput.addEventListener("change", refreshAvailability);
+    }
+
+    refreshAvailability();
 });

@@ -77,10 +77,10 @@
                     </label>
                     <div class="two-col">
                         <label>Pickup date
-                            <input type="date" name="pickup_date" min="{{ today.isoformat() }}" required>
+                            <input type="date" name="pickup_date" id="pickup-date" min="{{ today.isoformat() }}" required>
                         </label>
                         <label>Return date
-                            <input type="date" name="return_date" min="{{ today.isoformat() }}" required>
+                            <input type="date" name="return_date" id="return-date" min="{{ today.isoformat() }}" required>
                         </label>
                     </div>
                     <div class="section-heading-inline">
@@ -115,6 +115,34 @@
                     </label>
                     <button type="submit" class="button primary">Submit booking request</button>
                 </form>
+            </div>
+        </section>
+        <section class="card">
+            <div class="section-header">
+                <h2>Current stock reference</h2>
+                <p>Visible stock guide for the dates you choose</p>
+            </div>
+            <div class="table-wrap">
+                <table id="availability-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Item</th>
+                            <th>Total stock</th>
+                            <th>Available for selected dates</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in inventory_reference %}
+                            <tr data-sign-id="{{ item.id }}">
+                                <td>{{ item.category }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.total_quantity }}</td>
+                                <td class="available-quantity">{{ item.available_quantity }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </section>
     </main>
