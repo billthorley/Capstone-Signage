@@ -43,6 +43,11 @@ def get_reserved_total_for_day(target_day: date) -> int:
     return int(reserved or 0)
 
 
+def get_total_available_for_day(target_day: date, signs=None) -> int:
+    sign_records = signs or Sign.query.order_by(Sign.name.asc()).all()
+    return sum(get_available_stock(sign, target_day, target_day) for sign in sign_records)
+
+
 def get_peak_reserved_for_sign(sign: Sign) -> int:
     bookings = (
         Booking.query.join(BookingItem)
@@ -67,21 +72,19 @@ def get_peak_reserved_for_sign(sign: Sign) -> int:
 
 def get_future_stock_summary(days_ahead: int = 30) -> dict:
     signs = Sign.query.order_by(Sign.name.asc()).all()
-    total_inventory = sum(sign.total_quantity for sign in signs)
     today = date.today()
 
-    peak_reserved = 0
+    lowest_available = get_total_available_for_day(today, signs)
     peak_date = today
     for offset in range(days_ahead + 1):
         target_day = today + timedelta(days=offset)
-        reserved = get_reserved_total_for_day(target_day)
-        if reserved > peak_reserved:
-            peak_reserved = reserved
+        available = get_total_available_for_day(target_day, signs)
+        if available < lowest_available:
+            lowest_available = available
             peak_date = target_day
 
     return {
-        "projected_available": max(total_inventory - peak_reserved, 0),
-        "peak_reserved": peak_reserved,
+        "projected_available": lowest_available,
         "peak_date": peak_date,
     }
 

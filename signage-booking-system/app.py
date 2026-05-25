@@ -15,6 +15,8 @@ from stock_logic import (
     get_overbooking_warnings,
     get_peak_reserved_for_sign,
     get_reserved_total_for_day,
+    get_sign_projection,
+    get_total_available_for_day,
 )
 
 ADMIN_USERS = {
@@ -430,7 +432,8 @@ def register_routes(app):
     def admin_dashboard():
         signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
         today = date.today()
-        future_stock = get_future_stock_summary()
+        forecast_days = 180
+        future_stock = get_future_stock_summary(days_ahead=forecast_days)
         overbooking_warnings = get_overbooking_warnings()
 
         total_inventory = sum(sign.total_quantity for sign in signs)
@@ -450,20 +453,21 @@ def register_routes(app):
                     "sign": sign,
                     "available_today": available_today,
                     "booked_today": sign.total_quantity - available_today,
-                    "predicted_future_stock": min(
-                        get_available_stock(sign, today + timedelta(days=offset), today + timedelta(days=offset))
-                        for offset in range(31)
-                    ),
+                    "predicted_future_stock": get_sign_projection(sign, days_ahead=forecast_days),
                 }
             )
 
         stock_trend_labels = []
         stock_trend_values = []
         for week_offset in range(26):
-            target_day = today + timedelta(weeks=week_offset)
-            reserved = get_reserved_total_for_day(target_day)
-            stock_trend_labels.append(target_day.strftime("%d %b"))
-            stock_trend_values.append(max(total_inventory - reserved, 0))
+            week_start = today + timedelta(weeks=week_offset)
+            week_end = min(week_start + timedelta(days=6), today + timedelta(days=forecast_days))
+            weekly_low = min(
+                get_total_available_for_day(week_start + timedelta(days=day_offset), signs)
+                for day_offset in range((week_end - week_start).days + 1)
+            )
+            stock_trend_labels.append(week_start.strftime("%d %b"))
+            stock_trend_values.append(weekly_low)
 
         top_stock_cards = sorted(sign_cards, key=lambda item: item["booked_today"], reverse=True)[:6]
 
