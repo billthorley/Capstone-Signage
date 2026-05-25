@@ -8,14 +8,22 @@ from models import Booking, BookingItem, Sign
 
 ACTIVE_STATUSES = {"APPROVED", "COLLECTED"}
 WARNING_STATUSES = {"PENDING", "APPROVED", "COLLECTED"}
+FORECAST_STATUSES = {"PENDING", "APPROVED", "COLLECTED"}
 
 
-def get_overlapping_quantity(sign_id: int, requested_pickup: date, requested_return: date, exclude_booking_id=None) -> int:
+def get_overlapping_quantity(
+    sign_id: int,
+    requested_pickup: date,
+    requested_return: date,
+    exclude_booking_id=None,
+    statuses=None,
+) -> int:
+    booking_statuses = statuses or ACTIVE_STATUSES
     query = (
         db.session.query(func.coalesce(func.sum(BookingItem.quantity), 0))
         .join(Booking)
         .filter(BookingItem.sign_id == sign_id)
-        .filter(Booking.status.in_(ACTIVE_STATUSES))
+        .filter(Booking.status.in_(booking_statuses))
         .filter(Booking.pickup_date <= requested_return)
         .filter(Booking.return_date >= requested_pickup)
     )
@@ -28,6 +36,16 @@ def get_overlapping_quantity(sign_id: int, requested_pickup: date, requested_ret
 
 def get_available_stock(sign: Sign, requested_pickup: date, requested_return: date, exclude_booking_id=None) -> int:
     booked_quantity = get_overlapping_quantity(sign.id, requested_pickup, requested_return, exclude_booking_id)
+    return max(sign.total_quantity - booked_quantity, 0)
+
+
+def get_projected_available_stock(sign: Sign, requested_pickup: date, requested_return: date) -> int:
+    booked_quantity = get_overlapping_quantity(
+        sign.id,
+        requested_pickup,
+        requested_return,
+        statuses=FORECAST_STATUSES,
+    )
     return max(sign.total_quantity - booked_quantity, 0)
 
 
@@ -46,6 +64,11 @@ def get_reserved_total_for_day(target_day: date) -> int:
 def get_total_available_for_day(target_day: date, signs=None) -> int:
     sign_records = signs or Sign.query.order_by(Sign.name.asc()).all()
     return sum(get_available_stock(sign, target_day, target_day) for sign in sign_records)
+
+
+def get_projected_total_available_for_day(target_day: date, signs=None) -> int:
+    sign_records = signs or Sign.query.order_by(Sign.name.asc()).all()
+    return sum(get_projected_available_stock(sign, target_day, target_day) for sign in sign_records)
 
 
 def get_peak_reserved_for_sign(sign: Sign) -> int:
@@ -74,11 +97,11 @@ def get_future_stock_summary(days_ahead: int = 30) -> dict:
     signs = Sign.query.order_by(Sign.name.asc()).all()
     today = date.today()
 
-    lowest_available = get_total_available_for_day(today, signs)
+    lowest_available = get_projected_total_available_for_day(today, signs)
     peak_date = today
     for offset in range(days_ahead + 1):
         target_day = today + timedelta(days=offset)
-        available = get_total_available_for_day(target_day, signs)
+        available = get_projected_total_available_for_day(target_day, signs)
         if available < lowest_available:
             lowest_available = available
             peak_date = target_day
@@ -92,7 +115,7 @@ def get_future_stock_summary(days_ahead: int = 30) -> dict:
 def get_sign_projection(sign: Sign, days_ahead: int = 30) -> int:
     today = date.today()
     return min(
-        get_available_stock(sign, today + timedelta(days=offset), today + timedelta(days=offset))
+        get_projected_available_stock(sign, today + timedelta(days=offset), today + timedelta(days=offset))
         for offset in range(days_ahead + 1)
     )
 

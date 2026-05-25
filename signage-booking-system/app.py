@@ -14,9 +14,9 @@ from stock_logic import (
     get_future_stock_summary,
     get_overbooking_warnings,
     get_peak_reserved_for_sign,
+    get_projected_total_available_for_day,
     get_reserved_total_for_day,
     get_sign_projection,
-    get_total_available_for_day,
 )
 
 ADMIN_USERS = {
@@ -463,7 +463,7 @@ def register_routes(app):
             week_start = today + timedelta(weeks=week_offset)
             week_end = min(week_start + timedelta(days=6), today + timedelta(days=forecast_days))
             weekly_low = min(
-                get_total_available_for_day(week_start + timedelta(days=day_offset), signs)
+                get_projected_total_available_for_day(week_start + timedelta(days=day_offset), signs)
                 for day_offset in range((week_end - week_start).days + 1)
             )
             stock_trend_labels.append(week_start.strftime("%d %b"))
