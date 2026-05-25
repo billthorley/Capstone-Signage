@@ -20,8 +20,7 @@
             <nav>
                 <a href="{{ url_for('index') }}">Home</a>
                 <a href="{{ url_for('admin_bookings') }}">Bookings</a>
-                <a href="{{ url_for('manage_booking_stock') }}">Manage stock changes</a>
-                <a href="{{ url_for('booking') }}">Public booking page</a>
+                <a href="{{ url_for('manage_booking_stock') }}">Manage stock</a>
                 <form action="{{ url_for('logout') }}" method="post" class="inline-form">
                     <button type="submit" class="button secondary">Logout {{ admin_display_name }}</button>
                 </form>
@@ -40,6 +39,33 @@
             {% endif %}
         {% endwith %}
 
+        {% if overbooking_warnings %}
+            <section class="card warning-panel">
+                <div class="section-header">
+                    <div>
+                        <h2>Overbooking warnings</h2>
+                        <p>These overlapping bookings request more stock than is available for the item.</p>
+                    </div>
+                </div>
+                <div class="stack-list">
+                    {% for warning in overbooking_warnings %}
+                        <article class="warning-item">
+                            <h3>{{ warning.sign.name }} is overbooked by {{ warning.overbooked_by }}</h3>
+                            <p>
+                                {{ warning.reserved_quantity }} requested across
+                                {{ warning.start_date.strftime("%d %b %Y") }}
+                                {% if warning.end_date != warning.start_date %}
+                                    to {{ warning.end_date.strftime("%d %b %Y") }}
+                                {% endif %}
+                                with only {{ warning.total_quantity }} available.
+                            </p>
+                            <p><strong>Bookings involved:</strong> {{ warning.booking_names|join(", ") }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
         <section class="stats-grid">
             <article class="stat-card">
                 <span>Total inventory</span>
@@ -54,7 +80,7 @@
                 <strong>{{ booked_stock }}</strong>
             </article>
             <article class="stat-card">
-                <span>Predicted future stock</span>
+                <span>Lowest projected availability</span>
                 <strong>{{ future_stock.projected_available }}</strong>
                 <small>Lowest projected availability on {{ future_stock.peak_date.strftime("%d %b %Y") }}</small>
             </article>
@@ -72,7 +98,7 @@
             <div class="card chart-card">
                 <div class="section-header">
                     <h2>Future availability trend</h2>
-                    <p>Projected available stock over the coming weeks</p>
+                    <p>Projected available stock for the next 6 months, shown weekly</p>
                 </div>
                 <canvas id="trendChart"></canvas>
             </div>
@@ -110,7 +136,7 @@
                             <th>Total stock</th>
                             <th>Available now</th>
                             <th>Booked now</th>
-                            <th>Predicted future stock</th>
+                            <th>Lowest projected availability</th>
                         </tr>
                     </thead>
                     <tbody>

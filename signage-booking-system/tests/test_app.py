@@ -45,6 +45,16 @@ def test_booking_route_requires_login(client):
     assert b"Select your portal" in response.data
 
 
+def test_admin_cannot_access_public_booking_portal(client):
+    login_admin(client)
+
+    response = client.get("/booking", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Admin dashboard" in response.data
+    assert b"public booking portal is available to signed-in users only" in response.data
+
+
 def test_multi_item_booking_creates_multiple_booking_items(app, client):
     login_user(client)
 
@@ -121,3 +131,49 @@ def test_admin_cannot_approve_overlapping_booking_without_stock(app, client):
     with app.app_context():
         refreshed = Booking.query.get(pending_id)
         assert refreshed.status == "PENDING"
+
+
+def test_admin_pages_show_overbooking_warnings(app, client):
+    today = date.today()
+
+    with app.app_context():
+        sign = Sign.query.filter_by(name="Marquee 3x3").first()
+
+        booking_one = Booking(
+            event_name="Company One",
+            contact_name="Alex",
+            email="alex@example.com",
+            phone_number="0400000003",
+            pickup_date=today,
+            return_date=today,
+            status="APPROVED",
+        )
+        booking_one.items.append(BookingItem(sign=sign, quantity=2))
+
+        booking_two = Booking(
+            event_name="Company Two",
+            contact_name="Riley",
+            email="riley@example.com",
+            phone_number="0400000004",
+            pickup_date=today,
+            return_date=today,
+            status="PENDING",
+        )
+        booking_two.items.append(BookingItem(sign=sign, quantity=1))
+
+        db.session.add_all([booking_one, booking_two])
+        db.session.commit()
+
+    login_admin(client)
+
+    dashboard_response = client.get("/admin")
+    manage_response = client.get("/admin/bookings/manage")
+
+    assert dashboard_response.status_code == 200
+    assert b"Overbooking warnings" in dashboard_response.data
+    assert b"Marquee 3x3 is overbooked by 1" in dashboard_response.data
+    assert b"Company One, Company Two" in dashboard_response.data
+
+    assert manage_response.status_code == 200
+    assert b"Overbooking warnings" in manage_response.data
+    assert b"Marquee 3x3 is overbooked by 1" in manage_response.data

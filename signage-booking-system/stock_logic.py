@@ -7,6 +7,7 @@ from models import Booking, BookingItem, Sign
 
 
 ACTIVE_STATUSES = {"APPROVED", "COLLECTED"}
+WARNING_STATUSES = {"PENDING", "APPROVED", "COLLECTED"}
 
 
 def get_overlapping_quantity(sign_id: int, requested_pickup: date, requested_return: date, exclude_booking_id=None) -> int:
@@ -91,3 +92,84 @@ def get_sign_projection(sign: Sign, days_ahead: int = 30) -> int:
         get_available_stock(sign, today + timedelta(days=offset), today + timedelta(days=offset))
         for offset in range(days_ahead + 1)
     )
+
+
+def get_overbooking_warnings(days_ahead: int = 180) -> list[dict]:
+    today = date.today()
+    horizon_end = today + timedelta(days=days_ahead)
+    warnings = []
+
+    signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
+    for sign in signs:
+        relevant_items = []
+        for booking_item in sign.booking_items:
+            booking = booking_item.booking
+            if booking.status not in WARNING_STATUSES:
+                continue
+
+            start_date = max(booking.pickup_date, today)
+            end_date = min(booking.return_date, horizon_end)
+            if end_date < today or start_date > horizon_end:
+                continue
+
+            relevant_items.append(
+                {
+                    "booking": booking,
+                    "quantity": booking_item.quantity,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                }
+            )
+
+        if not relevant_items:
+            continue
+
+        active_warning = None
+        for offset in range(days_ahead + 1):
+            target_day = today + timedelta(days=offset)
+            overlapping_items = [
+                item
+                for item in relevant_items
+                if item["start_date"] <= target_day <= item["end_date"]
+            ]
+            reserved_quantity = sum(item["quantity"] for item in overlapping_items)
+
+            if reserved_quantity <= sign.total_quantity:
+                if active_warning:
+                    warnings.append(active_warning)
+                    active_warning = None
+                continue
+
+            booking_names = tuple(sorted({item["booking"].event_name for item in overlapping_items}))
+            statuses = tuple(sorted({item["booking"].status for item in overlapping_items}))
+            overbooked_by = reserved_quantity - sign.total_quantity
+
+            if (
+                active_warning
+                and target_day == active_warning["end_date"] + timedelta(days=1)
+                and active_warning["reserved_quantity"] == reserved_quantity
+                and active_warning["booking_names"] == booking_names
+                and active_warning["statuses"] == statuses
+            ):
+                active_warning["end_date"] = target_day
+                active_warning["overbooked_by"] = overbooked_by
+                continue
+
+            if active_warning:
+                warnings.append(active_warning)
+
+            active_warning = {
+                "sign": sign,
+                "total_quantity": sign.total_quantity,
+                "reserved_quantity": reserved_quantity,
+                "overbooked_by": overbooked_by,
+                "start_date": target_day,
+                "end_date": target_day,
+                "booking_names": booking_names,
+                "statuses": statuses,
+            }
+
+        if active_warning:
+            warnings.append(active_warning)
+
+    return warnings

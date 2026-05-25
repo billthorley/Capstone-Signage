@@ -18,8 +18,7 @@
             </div>
             <nav>
                 <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('manage_booking_stock') }}">Manage stock changes</a>
-                <a href="{{ url_for('booking') }}">Public booking page</a>
+                <a href="{{ url_for('manage_booking_stock') }}">Manage stock</a>
                 <form action="{{ url_for('logout') }}" method="post" class="inline-form">
                     <button type="submit" class="button secondary">Logout {{ admin_display_name }}</button>
                 </form>

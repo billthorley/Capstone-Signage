@@ -12,6 +12,7 @@ from stock_logic import (
     ACTIVE_STATUSES,
     get_available_stock,
     get_future_stock_summary,
+    get_overbooking_warnings,
     get_peak_reserved_for_sign,
     get_reserved_total_for_day,
 )
@@ -87,7 +88,10 @@ def admin_required(view_func):
 def user_required(view_func):
     @wraps(view_func)
     def wrapped_view(*args, **kwargs):
-        if not has_site_access():
+        if is_admin_logged_in():
+            flash("The public booking portal is available to signed-in users only.", "error")
+            return redirect(url_for("admin_dashboard"))
+        if not is_user_logged_in():
             flash("Please sign in to access the booking system.", "error")
             return redirect(url_for("index"))
         return view_func(*args, **kwargs)
@@ -427,6 +431,7 @@ def register_routes(app):
         signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
         today = date.today()
         future_stock = get_future_stock_summary()
+        overbooking_warnings = get_overbooking_warnings()
 
         total_inventory = sum(sign.total_quantity for sign in signs)
         available_stock = sum(get_available_stock(sign, today, today) for sign in signs)
@@ -454,8 +459,8 @@ def register_routes(app):
 
         stock_trend_labels = []
         stock_trend_values = []
-        for offset in range(8):
-            target_day = today + timedelta(days=offset * 4)
+        for week_offset in range(26):
+            target_day = today + timedelta(weeks=week_offset)
             reserved = get_reserved_total_for_day(target_day)
             stock_trend_labels.append(target_day.strftime("%d %b"))
             stock_trend_values.append(max(total_inventory - reserved, 0))
@@ -479,6 +484,7 @@ def register_routes(app):
             chart_top_item_available=[item["available_today"] for item in top_stock_cards],
             chart_trend_labels=stock_trend_labels,
             chart_trend_values=stock_trend_values,
+            overbooking_warnings=overbooking_warnings,
         )
 
     @app.route("/admin/bookings")
@@ -496,6 +502,7 @@ def register_routes(app):
             "admin_booking_stock.html",
             booking_records=booking_records,
             signs_by_category=group_signs_by_category(signs),
+            overbooking_warnings=get_overbooking_warnings(),
         )
 
     @app.route("/admin/bookings/<int:booking_id>/edit", methods=["POST"])
