@@ -74,6 +74,7 @@
                 <table class="manage-stock-table">
                     <thead>
                         <tr>
+                            <th>Recommendation</th>
                             <th>Event</th>
                             <th>Contact</th>
                             <th>Dates</th>
@@ -87,7 +88,6 @@
                             <tr class="{% if row.has_overbooking %}booking-row-overbooked{% else %}booking-row-live{% endif %}">
                                 <td>
                                     <div class="compact-cell">
-                                        <strong>{{ row.booking.event_name }}</strong>
                                         {% if row.recommendations %}
                                             <div class="recommendation-box">
                                                 <span class="recommendation-title">Recommended split</span>
@@ -99,8 +99,13 @@
                                                     </span>
                                                 {% endfor %}
                                             </div>
+                                        {% else %}
+                                            <span class="recommendation-clear">No change needed</span>
                                         {% endif %}
                                     </div>
+                                </td>
+                                <td>
+                                    <strong>{{ row.booking.event_name }}</strong>
                                 </td>
                                 <td>
                                     <div class="compact-cell">
@@ -168,7 +173,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6">No bookings available to manage.</td>
+                                <td colspan="7">No bookings available to manage.</td>
                             </tr>
                         {% endfor %}
                     </tbody>

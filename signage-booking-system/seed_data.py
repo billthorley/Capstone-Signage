@@ -144,8 +144,15 @@ DEMO_BOOKINGS = [
 def seed_signs() -> None:
     legacy_sign = Sign.query.filter_by(name="Feathes").first()
     corrected_sign = Sign.query.filter_by(name="Feathers").first()
-    if legacy_sign and corrected_sign is None:
-        legacy_sign.name = "Feathers"
+    if legacy_sign:
+        if corrected_sign is None:
+            legacy_sign.name = "Feathers"
+            corrected_sign = legacy_sign
+        else:
+            for booking_item in legacy_sign.booking_items:
+                booking_item.sign = corrected_sign
+            db.session.flush()
+            db.session.delete(legacy_sign)
 
     valid_names = {item["name"] for item in INITIAL_SIGNS}
 
