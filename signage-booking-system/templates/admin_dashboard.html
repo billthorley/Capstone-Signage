@@ -79,11 +79,6 @@
                 <span>Live bookings</span>
                 <strong>{{ booked_stock }}</strong>
             </article>
-            <article class="stat-card">
-                <span>Lowest projected availability</span>
-                <strong>{{ future_stock.projected_available }}</strong>
-                <small>Lowest projected availability on {{ future_stock.peak_date.strftime("%d %b %Y") }}</small>
-            </article>
         </section>
 
         <section class="dashboard-hero-grid">
@@ -101,24 +96,6 @@
                     <p>Projected available stock for the next 6 months, shown weekly</p>
                 </div>
                 <canvas id="trendChart"></canvas>
-            </div>
-        </section>
-
-        <section class="dashboard-hero-grid">
-            <div class="card chart-card">
-                <div class="section-header">
-                    <h2>Inventory by category</h2>
-                    <p>Total stock across signage groups</p>
-                </div>
-                <canvas id="categoryChart"></canvas>
-            </div>
-
-            <div class="card chart-card">
-                <div class="section-header">
-                    <h2>Most allocated items</h2>
-                    <p>Live bookings versus live stock by item</p>
-                </div>
-                <canvas id="topItemsChart"></canvas>
             </div>
         </section>
 
@@ -150,6 +127,24 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <section class="dashboard-hero-grid">
+            <div class="card chart-card">
+                <div class="section-header">
+                    <h2>Inventory by category</h2>
+                    <p>Total stock across signage groups</p>
+                </div>
+                <canvas id="categoryChart"></canvas>
+            </div>
+
+            <div class="card chart-card">
+                <div class="section-header">
+                    <h2>Most allocated items</h2>
+                    <p>Live bookings versus live stock by item</p>
+                </div>
+                <canvas id="topItemsChart"></canvas>
             </div>
         </section>
     </main>
