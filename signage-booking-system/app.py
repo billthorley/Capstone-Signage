@@ -255,7 +255,7 @@ def register_routes(app):
             login_type="admin",
             login_title="Admin login",
             login_heading="Sign in to the admin dashboard",
-            login_description="Admins can review bookings, manage inventory, and monitor current and future bookings.",
+            login_description="Admins can review live bookings, manage inventory, and monitor future availability.",
             demo_users=ADMIN_USERS,
             placeholder_username=first_username,
             placeholder_password=first_password,

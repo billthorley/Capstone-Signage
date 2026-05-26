@@ -14,7 +14,7 @@
         <section class="card centered-card access-card">
             <p class="eyebrow">Sunshine Coast Signage</p>
             <h1>Select your portal</h1>
-            <p>Sign in as a user to access the booking system, or sign in as an admin to manage current and future bookings.</p>
+            <p>Sign in as a user to access the booking system, or sign in as an admin to manage live bookings and future availability.</p>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -37,7 +37,7 @@
                 <article class="mini-card access-panel">
                     <p class="eyebrow">Admin access</p>
                     <h2>Booking dashboard</h2>
-                    <p>Admins can review requests, approve bookings, update inventory, and manage future allocations.</p>
+                    <p>Admins can review requests, approve live bookings, update inventory, and manage future availability.</p>
                     <a class="button secondary" href="{{ url_for('admin_login') }}">Admin login</a>
                 </article>
             </section>

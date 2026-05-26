@@ -72,11 +72,11 @@
                 <strong>{{ total_inventory }}</strong>
             </article>
             <article class="stat-card">
-                <span>Current available stock</span>
+                <span>Live stock</span>
                 <strong>{{ available_stock }}</strong>
             </article>
             <article class="stat-card">
-                <span>Currently booked stock</span>
+                <span>Live bookings</span>
                 <strong>{{ booked_stock }}</strong>
             </article>
             <article class="stat-card">
@@ -90,7 +90,7 @@
             <div class="card chart-card">
                 <div class="section-header">
                     <h2>Stock overview</h2>
-                    <p>Current available versus booked stock</p>
+                    <p>Live stock versus live bookings</p>
                 </div>
                 <canvas id="overviewChart"></canvas>
             </div>
@@ -116,7 +116,7 @@
             <div class="card chart-card">
                 <div class="section-header">
                     <h2>Most allocated items</h2>
-                    <p>Booked versus available stock by item</p>
+                    <p>Live bookings versus live stock by item</p>
                 </div>
                 <canvas id="topItemsChart"></canvas>
             </div>
@@ -124,7 +124,7 @@
 
         <section class="card">
             <div class="section-header">
-                <h2>Current stock table</h2>
+                <h2>Live stock table</h2>
                 <p>Quick inventory view for all signage items</p>
             </div>
             <div class="table-wrap">
@@ -134,9 +134,8 @@
                             <th>Category</th>
                             <th>Item</th>
                             <th>Total stock</th>
-                            <th>Available now</th>
-                            <th>Booked now</th>
-                            <th>Lowest projected availability</th>
+                            <th>Live stock</th>
+                            <th>Live bookings</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -147,7 +146,6 @@
                                 <td>{{ item.sign.total_quantity }}</td>
                                 <td>{{ item.available_today }}</td>
                                 <td>{{ item.booked_today }}</td>
-                                <td>{{ item.predicted_future_stock }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -160,7 +158,7 @@
         const overviewChart = new Chart(document.getElementById("overviewChart"), {
             type: "doughnut",
             data: {
-                labels: {{ chart_overview_labels|tojson }},
+                labels: ["Live stock", "Live bookings"],
                 datasets: [{
                     data: {{ chart_overview_values|tojson }},
                     backgroundColor: ["#2563eb", "#93c5fd"],
@@ -212,12 +210,12 @@
                 labels: {{ chart_top_item_labels|tojson }},
                 datasets: [
                     {
-                        label: "Booked",
+                        label: "Live bookings",
                         data: {{ chart_top_item_booked|tojson }},
                         backgroundColor: "#2563eb"
                     },
                     {
-                        label: "Available",
+                        label: "Live stock",
                         data: {{ chart_top_item_available|tojson }},
                         backgroundColor: "#93c5fd"
                     }
