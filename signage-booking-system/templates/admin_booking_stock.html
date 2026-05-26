@@ -67,58 +67,98 @@
         <section class="card">
             <div class="section-header">
                 <h2>Edit booking stock or cancel a booking</h2>
-                <p>Update booked quantities and signage items without changing the rest of the booking details.</p>
+                <p>Condensed table view for quicker stock checks and updates.</p>
             </div>
 
-            <div class="stack-list">
-                {% for booking in booking_records %}
-                    <article class="booking-card">
-                        <div class="split-line">
-                            <div>
-                                <h3>{{ booking.event_name }}</h3>
-                                <p>{{ booking.contact_name }} | {{ booking.email }} | {{ booking.phone_number }}</p>
-                            </div>
-                            <span class="status {{ booking.status|lower }}">{{ booking.status }}</span>
-                        </div>
-                        <p><strong>Dates:</strong> {{ booking.pickup_date.strftime("%d %b %Y") }} to {{ booking.return_date.strftime("%d %b %Y") }}</p>
-
-                        <form action="{{ url_for('edit_booking_stock', booking_id=booking.id) }}" method="post" class="stack-form">
-                            <div class="stack-list booking-items-list">
-                                {% for item in booking.items %}
-                                    <div class="booking-item-row admin-booking-item-row">
-                                        <label>Signage type
-                                            <select name="sign_id[]" required>
-                                                <option value="">Select signage</option>
-                                                {% for category, signs in signs_by_category.items() %}
-                                                    <optgroup label="{{ category }}">
-                                                        {% for sign in signs %}
-                                                            <option value="{{ sign.id }}" {% if sign.id == item.sign.id %}selected{% endif %}>
-                                                                {{ sign.name }} ({{ sign.total_quantity }} total)
-                                                            </option>
-                                                        {% endfor %}
-                                                    </optgroup>
-                                                {% endfor %}
-                                            </select>
-                                        </label>
-                                        <label>Quantity
-                                            <input type="number" name="quantity[]" min="1" value="{{ item.quantity }}" required>
-                                        </label>
+            <div class="table-wrap">
+                <table class="manage-stock-table">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Contact</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                            <th>Stock lines</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in booking_stock_rows %}
+                            <tr class="{% if row.has_overbooking %}booking-row-overbooked{% endif %}">
+                                <td>
+                                    <strong>{{ row.booking.event_name }}</strong>
+                                </td>
+                                <td>
+                                    <div class="compact-cell">
+                                        <strong>{{ row.booking.contact_name }}</strong>
+                                        <span>{{ row.booking.email }}</span>
+                                        <span>{{ row.booking.phone_number }}</span>
                                     </div>
-                                {% endfor %}
-                            </div>
-
-                            <div class="button-row">
-                                <button type="submit" class="button primary">Save stock changes</button>
-                            </div>
-                        </form>
-
-                        <form action="{{ url_for('cancel_booking', booking_id=booking.id) }}" method="post" class="button-row">
-                            <button type="submit" class="button danger">Cancel booking</button>
-                        </form>
-                    </article>
-                {% else %}
-                    <p>No bookings available to manage.</p>
-                {% endfor %}
+                                </td>
+                                <td>
+                                    {{ row.booking.pickup_date.strftime("%d %b %Y") }}<br>
+                                    to {{ row.booking.return_date.strftime("%d %b %Y") }}
+                                </td>
+                                <td>
+                                    <span class="status {{ row.booking.status|lower }}">{{ row.booking.status }}</span>
+                                </td>
+                                <td class="stock-lines-cell">
+                                    <form action="{{ url_for('edit_booking_stock', booking_id=row.booking.id) }}" method="post" class="stock-table-form">
+                                        <div class="stock-lines-list">
+                                            {% for item_row in row.item_rows %}
+                                                <div class="stock-line {% if item_row.is_overbooked %}stock-line-overbooked{% endif %}">
+                                                    <div class="stock-line-sign">
+                                                        <label>Signage type</label>
+                                                        <select name="sign_id[]" required>
+                                                            <option value="">Select signage</option>
+                                                            {% for category, signs in signs_by_category.items() %}
+                                                                <optgroup label="{{ category }}">
+                                                                    {% for sign in signs %}
+                                                                        <option value="{{ sign.id }}" {% if sign.id == item_row.item.sign.id %}selected{% endif %}>
+                                                                            {{ sign.name }} ({{ sign.total_quantity }} total)
+                                                                        </option>
+                                                                    {% endfor %}
+                                                                </optgroup>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="stock-line-qty">
+                                                        <label>Booked</label>
+                                                        <input type="number" name="quantity[]" min="1" value="{{ item_row.item.quantity }}" required>
+                                                    </div>
+                                                    <div class="stock-line-availability">
+                                                        <label>Total stock</label>
+                                                        <span class="availability-pill {% if item_row.is_overbooked %}availability-pill-danger{% endif %}">
+                                                            {{ item_row.total_stock }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="stock-line-availability">
+                                                        <label>Remaining available</label>
+                                                        <span class="availability-pill {% if item_row.is_overbooked %}availability-pill-danger{% endif %}">
+                                                            {{ item_row.remaining_available }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="button-row">
+                                            <button type="submit" class="button primary">Save stock</button>
+                                        </div>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('cancel_booking', booking_id=row.booking.id) }}" method="post" class="stack-form compact-actions">
+                                        <button type="submit" class="button danger">Cancel booking</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6">No bookings available to manage.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </section>
     </main>

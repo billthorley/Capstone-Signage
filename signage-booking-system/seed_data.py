@@ -49,7 +49,7 @@ INITIAL_SIGNS = [
     },
     {
         "category": "Equipment",
-        "name": "Feathes",
+        "name": "Feathers",
         "total_quantity": 22,
         "description": "Feather flag inventory as listed in the provided stock sheet.",
     },
@@ -109,7 +109,7 @@ DEMO_BOOKINGS = [
         "status": "PENDING",
         "items": {
             "Short Single": 14,
-            "Feathes": 8,
+            "Feathers": 8,
             "Marquee 3x3": 2,
             "Marquee 6x3": 2,
             "Feather Bases": 2,
@@ -131,7 +131,7 @@ DEMO_BOOKINGS = [
             "Short Multi": 5,
             "Tall Single": 10,
             "Tall Multi (5)": 5,
-            "Feathes": 20,
+            "Feathers": 20,
             "Marquee 3x3": 2,
             "Marquee 6x3": 1,
             "Marquee weights": 4,
@@ -142,6 +142,11 @@ DEMO_BOOKINGS = [
 
 
 def seed_signs() -> None:
+    legacy_sign = Sign.query.filter_by(name="Feathes").first()
+    corrected_sign = Sign.query.filter_by(name="Feathers").first()
+    if legacy_sign and corrected_sign is None:
+        legacy_sign.name = "Feathers"
+
     valid_names = {item["name"] for item in INITIAL_SIGNS}
 
     for item in INITIAL_SIGNS:

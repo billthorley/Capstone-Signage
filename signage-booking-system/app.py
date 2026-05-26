@@ -17,6 +17,7 @@ from stock_logic import (
     get_projected_total_available_for_day,
     get_reserved_total_for_day,
     get_sign_projection,
+    get_overlapping_quantity,
 )
 
 ADMIN_USERS = {
@@ -502,9 +503,38 @@ def register_routes(app):
     def manage_booking_stock():
         booking_records = Booking.query.order_by(Booking.created_at.desc()).all()
         signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
+        booking_stock_rows = []
+
+        for booking in booking_records:
+            item_rows = []
+            for item in booking.items:
+                reserved_for_dates = get_overlapping_quantity(
+                    item.sign.id,
+                    booking.pickup_date,
+                    booking.return_date,
+                    statuses={"PENDING", "APPROVED", "COLLECTED"},
+                )
+                remaining_available = max(item.sign.total_quantity - reserved_for_dates, 0)
+                item_rows.append(
+                    {
+                        "item": item,
+                        "total_stock": item.sign.total_quantity,
+                        "remaining_available": remaining_available,
+                        "is_overbooked": reserved_for_dates > item.sign.total_quantity,
+                    }
+                )
+
+            booking_stock_rows.append(
+                {
+                    "booking": booking,
+                    "item_rows": item_rows,
+                    "has_overbooking": any(row["is_overbooked"] for row in item_rows),
+                }
+            )
+
         return render_template(
             "admin_booking_stock.html",
-            booking_records=booking_records,
+            booking_stock_rows=booking_stock_rows,
             signs_by_category=group_signs_by_category(signs),
             overbooking_warnings=get_overbooking_warnings(),
         )

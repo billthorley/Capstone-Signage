@@ -39,11 +39,17 @@ def get_available_stock(sign: Sign, requested_pickup: date, requested_return: da
     return max(sign.total_quantity - booked_quantity, 0)
 
 
-def get_projected_available_stock(sign: Sign, requested_pickup: date, requested_return: date) -> int:
+def get_projected_available_stock(
+    sign: Sign,
+    requested_pickup: date,
+    requested_return: date,
+    exclude_booking_id=None,
+) -> int:
     booked_quantity = get_overlapping_quantity(
         sign.id,
         requested_pickup,
         requested_return,
+        exclude_booking_id=exclude_booking_id,
         statuses=FORECAST_STATUSES,
     )
     return max(sign.total_quantity - booked_quantity, 0)

@@ -177,3 +177,44 @@ def test_admin_pages_show_overbooking_warnings(app, client):
     assert manage_response.status_code == 200
     assert b"Overbooking warnings" in manage_response.data
     assert b"Marquee 3x3 is overbooked by 1" in manage_response.data
+
+
+def test_manage_stock_table_shows_available_stock_and_overbooked_rows(app, client):
+    today = date.today()
+
+    with app.app_context():
+        sign = Sign.query.filter_by(name="Marquee 3x3").first()
+
+        booking_one = Booking(
+            event_name="Company One",
+            contact_name="Alex",
+            email="alex@example.com",
+            phone_number="0400000003",
+            pickup_date=today,
+            return_date=today,
+            status="APPROVED",
+        )
+        booking_one.items.append(BookingItem(sign=sign, quantity=2))
+
+        booking_two = Booking(
+            event_name="Company Two",
+            contact_name="Riley",
+            email="riley@example.com",
+            phone_number="0400000004",
+            pickup_date=today,
+            return_date=today,
+            status="PENDING",
+        )
+        booking_two.items.append(BookingItem(sign=sign, quantity=1))
+
+        db.session.add_all([booking_one, booking_two])
+        db.session.commit()
+
+    login_admin(client)
+    response = client.get("/admin/bookings/manage")
+
+    assert response.status_code == 200
+    assert b"Total stock" in response.data
+    assert b"Remaining available" in response.data
+    assert b"booking-row-overbooked" in response.data
+    assert b"stock-line-overbooked" in response.data
