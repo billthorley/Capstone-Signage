@@ -84,9 +84,23 @@
                     </thead>
                     <tbody>
                         {% for row in booking_stock_rows %}
-                            <tr class="{% if row.has_overbooking %}booking-row-overbooked{% endif %}">
+                            <tr class="{% if row.has_overbooking %}booking-row-overbooked{% else %}booking-row-live{% endif %}">
                                 <td>
-                                    <strong>{{ row.booking.event_name }}</strong>
+                                    <div class="compact-cell">
+                                        <strong>{{ row.booking.event_name }}</strong>
+                                        {% if row.recommendations %}
+                                            <div class="recommendation-box">
+                                                <span class="recommendation-title">Recommended split</span>
+                                                {% for recommendation in row.recommendations %}
+                                                    <span>
+                                                        {{ recommendation.sign_name }}:
+                                                        {{ recommendation.recommended_quantity }}
+                                                        instead of {{ recommendation.requested_quantity }}
+                                                    </span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="compact-cell">

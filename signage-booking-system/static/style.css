@@ -578,6 +578,10 @@ th {
     background: rgba(254, 242, 242, 0.92);
 }
 
+.booking-row-live {
+    background: rgba(239, 246, 255, 0.56);
+}
+
 .booking-row-overbooked {
     background: rgba(254, 242, 242, 0.42);
 }
@@ -606,6 +610,22 @@ th {
 
 .compact-actions {
     min-width: 140px;
+}
+
+.recommendation-box {
+    display: grid;
+    gap: 0.3rem;
+    margin-top: 0.55rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 14px;
+    background: rgba(219, 234, 254, 0.92);
+    border: 1px solid rgba(96, 165, 250, 0.35);
+    color: var(--primary-deep);
+    font-size: 0.84rem;
+}
+
+.recommendation-title {
+    font-weight: 700;
 }
 
 .summary-list {

@@ -218,3 +218,5 @@ def test_manage_stock_table_shows_available_stock_and_overbooked_rows(app, clien
     assert b"Remaining available" in response.data
     assert b"booking-row-overbooked" in response.data
     assert b"stock-line-overbooked" in response.data
+    assert b"Recommended split" in response.data
+    assert b"Marquee 3x3:" in response.data

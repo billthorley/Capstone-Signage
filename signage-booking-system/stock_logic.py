@@ -205,3 +205,102 @@ def get_overbooking_warnings(days_ahead: int = 180) -> list[dict]:
             warnings.append(active_warning)
 
     return warnings
+
+
+def get_stock_split_recommendations(days_ahead: int = 180) -> dict[int, list[dict]]:
+    today = date.today()
+    horizon_end = today + timedelta(days=days_ahead)
+    recommendations_by_booking = {}
+
+    signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
+    for sign in signs:
+        relevant_items = []
+        for booking_item in sign.booking_items:
+            booking = booking_item.booking
+            if booking.status not in WARNING_STATUSES:
+                continue
+
+            start_date = max(booking.pickup_date, today)
+            end_date = min(booking.return_date, horizon_end)
+            if end_date < today or start_date > horizon_end:
+                continue
+
+            relevant_items.append(
+                {
+                    "booking": booking,
+                    "booking_item": booking_item,
+                    "quantity": booking_item.quantity,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                }
+            )
+
+        if not relevant_items:
+            continue
+
+        relevant_items.sort(key=lambda item: (item["start_date"], item["end_date"], item["booking"].id))
+
+        clusters = []
+        current_cluster = []
+        cluster_end = None
+        for item in relevant_items:
+            if not current_cluster:
+                current_cluster = [item]
+                cluster_end = item["end_date"]
+                continue
+
+            if item["start_date"] <= cluster_end:
+                current_cluster.append(item)
+                cluster_end = max(cluster_end, item["end_date"])
+            else:
+                clusters.append(current_cluster)
+                current_cluster = [item]
+                cluster_end = item["end_date"]
+
+        if current_cluster:
+            clusters.append(current_cluster)
+
+        for cluster in clusters:
+            total_requested = sum(item["quantity"] for item in cluster)
+            if total_requested <= sign.total_quantity:
+                continue
+
+            exact_shares = []
+            for item in cluster:
+                exact_share = sign.total_quantity * (item["quantity"] / total_requested)
+                base_share = min(int(exact_share), item["quantity"])
+                exact_shares.append(
+                    {
+                        "item": item,
+                        "exact_share": exact_share,
+                        "recommended": base_share,
+                        "remainder": exact_share - base_share,
+                    }
+                )
+
+            allocated = sum(share["recommended"] for share in exact_shares)
+            remaining_units = sign.total_quantity - allocated
+
+            for share in sorted(exact_shares, key=lambda item: item["remainder"], reverse=True):
+                if remaining_units <= 0:
+                    break
+                if share["recommended"] < share["item"]["quantity"]:
+                    share["recommended"] += 1
+                    remaining_units -= 1
+
+            for share in exact_shares:
+                item = share["item"]
+                if share["recommended"] >= item["quantity"]:
+                    continue
+
+                booking = item["booking"]
+                recommendations_by_booking.setdefault(booking.id, []).append(
+                    {
+                        "sign_name": sign.name,
+                        "requested_quantity": item["quantity"],
+                        "recommended_quantity": share["recommended"],
+                        "date_range": f"{item['start_date'].strftime('%d %b')} to {item['end_date'].strftime('%d %b')}",
+                    }
+                )
+
+    return recommendations_by_booking

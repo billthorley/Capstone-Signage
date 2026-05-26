@@ -17,6 +17,7 @@ from stock_logic import (
     get_projected_total_available_for_day,
     get_reserved_total_for_day,
     get_sign_projection,
+    get_stock_split_recommendations,
     get_overlapping_quantity,
 )
 
@@ -503,6 +504,7 @@ def register_routes(app):
     def manage_booking_stock():
         booking_records = Booking.query.order_by(Booking.created_at.desc()).all()
         signs = Sign.query.order_by(Sign.category.asc(), Sign.name.asc()).all()
+        recommendations_by_booking = get_stock_split_recommendations()
         booking_stock_rows = []
 
         for booking in booking_records:
@@ -529,6 +531,7 @@ def register_routes(app):
                     "booking": booking,
                     "item_rows": item_rows,
                     "has_overbooking": any(row["is_overbooked"] for row in item_rows),
+                    "recommendations": recommendations_by_booking.get(booking.id, []),
                 }
             )
 
